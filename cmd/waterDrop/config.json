@@ -1,0 +1,12 @@
+{
+    "stakingSC": "erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqql8lllls4sn5ev",
+    "proxy": "http://65.21.34.164:8079",
+    "indexer": "http://65.21.34.160:9200",
+    "startTime": 1655596800,
+    "endTime": 1658102400,
+    "bonusToken": "WATER-9ed400",
+    "bonusAmount": 1100,
+    "perStakedAmount": 1,
+    "bonusWallet": "/home/mihai/walletKey - shard 2.pem",
+    "bonusWalletPassword": ""
+}
