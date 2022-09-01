@@ -54,6 +54,23 @@ func (nm *NetworkManager) GetIndexedTxs(toAddress string, size int, fromTime int
 	return list.Hits.Hits, nil
 }
 
+func (nm *NetworkManager) GetIndexedTxs2(toAddress, fromAddress string, size int, fromTime int64, toTime int64) ([]*data.ElasticEntry, error) {
+	endpoint := fmt.Sprintf("%s/transactions/_search?size=%v&q=receiver:%s%%20AND%%20sender:%s", nm.indexer, size, toAddress, fromAddress)
+	endpoint += fmt.Sprintf("%%20AND%%20timestamp:>%v%%20AND%%20timestamp:<%v&sort=timestamp:asc", fromTime, toTime)
+	bytes, err := utils.GetHTTP(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	list := data.ElasticResult{}
+	err = json.Unmarshal(bytes, &list)
+	if err != nil {
+		return nil, err
+	}
+
+	return list.Hits.Hits, nil
+}
+
 func (nm *NetworkManager) GetTxScrs(txHash string, size int) ([]*data.ElasticEntry, error) {
 	endpoint := fmt.Sprintf("%s/scresults/_search?size=%v&q=originalTxHash:%s", nm.indexer, size, txHash)
 	bytes, err := utils.GetHTTP(endpoint)
