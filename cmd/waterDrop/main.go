@@ -55,13 +55,22 @@ func main() {
 	days := 0
 	for fromTime <= appConfig.EndTime {
 		fmt.Printf("analyzing txs between %v and %v\n\r", fromTime, toTime)
-		txs, err := netMan.GetIndexedTxs(appConfig.StakingSC, 10000, fromTime, toTime)
-		if err != nil {
-			panic("error retrieving txs from indexer: " + err.Error())
+		txs := make([]*data.ElasticEntry, 0)
+		from := fromTime
+		for {
+			txs2, err := netMan.GetIndexedTxs(appConfig.StakingSC, 10000, from, toTime)
+			if err != nil {
+				panic("error retrieving txs from indexer: " + err.Error())
+			}
+			txs = append(txs, txs2...)
+			if len(txs2) < 10000 {
+				break
+				// panic("elastic search limit reached")
+			} else {
+				from = int64(txs2[len(txs2)-1].Source.Timestamp) + 1
+			}
 		}
-		if len(txs) == 10000 {
-			panic("elastic search limit reached")
-		}
+		fmt.Printf("%v txs\n\r", len(txs))
 		for _, tx := range txs {
 			if tx.Source.Status != "success" {
 				continue
@@ -124,13 +133,15 @@ func main() {
 	}
 
 	// export data to csv
+	fmt.Println("exporting data...")
 	f, err := os.Create("output.csv")
 	if err != nil {
 		panic("can not create file output.csv: " + err.Error())
 	}
-	fmt.Fprintln(f, "Address,Average Stake,Last Staked")
+	fmt.Fprintln(f, "Address,Average Stake,Last Staked,Token Balance")
 	for delegator, value := range averageDelegations {
-		fmt.Fprintf(f, "%s,%.2f,%.2f\n", delegator, value, delegations[delegator])
+		b, _ := netMan.GetTokenBalance(delegator, appConfig.BonusToken, int(token.Decimals))
+		fmt.Fprintf(f, "%s,%.2f,%.2f,%.2f\n", delegator, value, delegations[delegator], b)
 	}
 	f.Close()
 
@@ -151,7 +162,7 @@ func main() {
 		fmt.Printf("Insufficient funds. You have %.6f and you need %.6f eGLD\n\r", balance, fees)
 		os.Exit(1)
 	}
-	balance, err = netMan.GetTokenBalance(senderAddress.AddressAsBech32String(), appConfig.BonusToken)
+	balance, err = netMan.GetTokenBalance(senderAddress.AddressAsBech32String(), appConfig.BonusToken, int(token.Decimals))
 	if err != nil {
 		panic("can not get wallet token balance")
 	}
